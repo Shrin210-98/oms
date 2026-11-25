@@ -112,4 +112,15 @@ To run the access integration suite, set `TEST_DATABASE_URL` to a local PostgreS
 
 Stop the API and web terminals with Ctrl+C. Use `docker compose down` to stop the database and retain its data. The next milestone introduces customer and catalogue data after review of staff access.
 
+## Versioned releases
+
+System status shows the product version from the root `package.json` at build time. The web and API ship together. The private workspace package versions identify internal dependencies. Read the [changelog](CHANGELOG.md) for the user-visible changes in each release.
+
+1. Choose the next product version. During the 0.x series, use a minor bump for a feature or breaking change and a patch bump for a compatible fix. Describe any breaking change in the release notes.
+2. From the root, run `npm version minor --no-git-tag-version` or `npm version patch --no-git-tag-version`. Add a matching `## X.Y.Z` entry to the changelog and run `npm run release:check -- vX.Y.Z`, substituting the actual version.
+3. Run the tests and build, commit the version, lockfile and notes together, and create an annotated tag on that commit with `git tag -a vX.Y.Z -m "OMS vX.Y.Z"`.
+4. When ready to publish to a configured GitHub remote, push the release commit and that specific tag. A tag push runs the full CI suite. After it passes, Actions creates a GitHub Release with the matching notes and tagged source. Running the job again accepts an existing release.
+
+For a local rollout, check out the tagged source in a fresh directory and follow **Run locally**. Verify the version and database readiness on System status. To return to an earlier app release, run its tag against a compatible schema. Back up PostgreSQL before applying migrations. Publishing a source release and deploying it to a host are separate steps.
+
 Licensed under the MIT License.

@@ -1,5 +1,9 @@
 name: OMS checks
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
 
 permissions:
   contents: read
@@ -14,6 +18,13 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Check product version, lockfile and release notes
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            npm run release:check -- "$GITHUB_REF_NAME"
+          else
+            npm run release:check
+          fi
       - run: npm ci
       - run: npm run setup
       - run: npm run typecheck
@@ -48,3 +59,23 @@ jobs:
       - name: Stop CI services
         if: always()
         run: docker compose --env-file .env.example down
+
+  release:
+    if: github.event_name == 'push' && github.ref_type == 'tag' && !github.event.deleted
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Publish the verified source release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/release-notes.mjs "$GITHUB_REF_NAME" > "$RUNNER_TEMP/oms-release.md"
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "OMS $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/oms-release.md"
+          fi

@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StatusPage } from "../src/StatusPage";
+import { version } from "../../../package.json";
 
 const requestId = "91986d65-a7c1-4315-9832-8e7088f72c28";
 function readiness(status: "ready" | "unavailable") {
@@ -31,6 +32,7 @@ describe("system status", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Bad gateway", { status: 502 })));
     render(<StatusPage />);
     await screen.findByText("Unverified");
+    expect(screen.getByText(`v${version}`)).toBeDefined();
     expect(screen.getByText("Unknown")).toBeDefined();
     expect(screen.queryByText("Request ID")).toBeNull();
   });

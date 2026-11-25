@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { readinessSchema, type Readiness } from "@oms/contracts";
+import { version } from "../../../package.json";
 
 type Check = { state: "checking" | "offline" } | { state: "received"; result: Readiness };
 
@@ -70,10 +71,13 @@ export function StatusPage() {
             <div><dt>PostgreSQL</dt><dd>{status.database}</dd></div>
           </dl>
         </section>
-        {result && <dl className="trace">
-          <div><dt>Last checked</dt><dd><time dateTime={result.checkedAt}>{new Date(result.checkedAt).toLocaleString()}</time></dd></div>
-          <div><dt>Request ID</dt><dd><code>{result.requestId}</code></dd></div>
-        </dl>}
+        <dl className="trace">
+          <div><dt>OMS version</dt><dd><code>v{version}</code></dd></div>
+          {result && <>
+            <div><dt>Last checked</dt><dd><time dateTime={result.checkedAt}>{new Date(result.checkedAt).toLocaleString()}</time></dd></div>
+            <div><dt>Request ID</dt><dd><code>{result.requestId}</code></dd></div>
+          </>}
+        </dl>
       </main>
     </>
   );
