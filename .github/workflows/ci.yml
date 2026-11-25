@@ -24,6 +24,12 @@ jobs:
           cp .env.example .env
           docker compose up -d --wait db
           npm run db:migrate
+      - name: Test staff access in a disposable database
+        run: |
+          set -a
+          source .env
+          set +a
+          TEST_DATABASE_URL="$DATABASE_URL" npm run test:access
       - name: Verify compiled API, development proxy and database recovery
         run: |
           npm start -w @oms/api > "$RUNNER_TEMP/oms-api.log" 2>&1 &

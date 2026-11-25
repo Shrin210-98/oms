@@ -16,3 +16,65 @@ model SupplierProfile {
 
   @@map("supplier_profile")
 }
+
+enum StaffRole {
+  Admin
+  Sales
+  Manager
+  Finance
+  Operations
+}
+
+model StaffUser {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String?   @map("password_hash")
+  active       Boolean   @default(true)
+  version      Int       @default(1)
+  activatedAt  DateTime? @map("activated_at") @db.Timestamptz(3)
+  roles        RoleAssignment[]
+  sessions     StaffSession[]
+  reset        PasswordReset?
+  actions      AccessEvent[] @relation("actor")
+  history      AccessEvent[] @relation("subject")
+  @@map("staff_user")
+}
+
+model RoleAssignment {
+  userId String    @map("user_id") @db.Uuid
+  role   StaffRole
+  user   StaffUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@id([userId, role])
+  @@map("staff_role")
+}
+
+model StaffSession {
+  digest     String    @id @db.Char(64)
+  userId     String    @map("user_id") @db.Uuid
+  lastSeenAt DateTime  @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  user       StaffUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("staff_session")
+}
+
+model PasswordReset {
+  userId    String    @id @map("user_id") @db.Uuid
+  digest    String    @unique @db.Char(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  user      StaffUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@map("password_reset")
+}
+
+model AccessEvent {
+  id        String    @id @default(uuid()) @db.Uuid
+  action    String
+  actorId   String?   @map("actor_id") @db.Uuid
+  subjectId String    @map("subject_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  actor     StaffUser? @relation("actor", fields: [actorId], references: [id], onDelete: Restrict)
+  subject   StaffUser  @relation("subject", fields: [subjectId], references: [id], onDelete: Restrict)
+  @@index([subjectId, createdAt])
+  @@map("access_event")
+}

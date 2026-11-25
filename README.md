@@ -1,8 +1,8 @@
 # OMS
 
-A learning-first B2B order management system for a furniture wholesaler. The first milestone delivers an observable request from React through Express to PostgreSQL. The planned commercial workflow follows a hotel's order for 50 chairs, 20 desks and 10 cabinets.
+A learning-first B2B order management system for a furniture wholesaler. The current release includes service readiness and staff access management. The planned commercial workflow follows a hotel's order for 50 chairs, 20 desks and 10 cabinets.
 
-## Run Milestone 1 locally
+## Run locally
 
 Use Linux, Node.js **24.22.3** with its bundled npm, Docker Engine and the Docker Compose plugin. Run the commands from the repository root. With nvm, `nvm install` and `nvm use` select the version in `.nvmrc`.
 
@@ -28,6 +28,20 @@ Open two terminals at the repository root.
 
 Open **http://127.0.0.1:5173**. The page shows the result of a fresh database read, the check time and a request ID. Match the ID to the API terminal. All three services run on the same computer. Docker publishes PostgreSQL only on loopback port 5432.
 
+## Sign in and administer staff
+
+After applying the migrations, run the following in a private interactive terminal. Choose an email under `example.test` for the synthetic account.
+
+```sh
+npm run staff:bootstrap -- admin@example.test
+```
+
+Open **http://127.0.0.1:5173/recover**, enter the displayed code, and choose a password of 15–128 characters. Sign in and open **Staff administration**. Before first activation, repeating bootstrap for the same address replaces the code. Activation closes bootstrap. Provision a second administrator so that either administrator can help the other recover access.
+
+Administrators create accounts, assign one or more roles, enable or disable staff, revoke sessions and issue recovery codes. Deliver each code privately. The recipient uses the same recovery page to choose their password. Each code lasts 15 minutes and works once. Issuing a replacement immediately invalidates the previous password, code and sessions. An administrator needs a second administrator to change their own access.
+
+Use the exact address in `APP_ORIGIN` when opening the site. State-changing endpoints check that browser origin. Production mode requires an HTTPS origin. Development uses a loopback HTTP cookie. See the [staff access guide](docs/staff-access.md) for the HTTP contract, trade-offs, exercise and SQL walkthrough.
+
 ## Trace the request
 
 ```mermaid
@@ -44,9 +58,9 @@ sequenceDiagram
   V-->>UI: HTTP 200 or 503
 ```
 
-The React effect synchronizes the page with an external service on mount and on **Check again**. Cleanup aborts obsolete fetches. The shared Zod schema checks the network response at runtime. The UI derives its labels from one check result.
+The React effect synchronizes the status page with an external service on mount and on **Check again**. Cleanup aborts obsolete fetches. The shared Zod schema checks the network response at runtime. The UI derives its labels from one check result.
 
-Express middleware creates a request ID before routing and logs the final status and elapsed time when the response finishes. The readiness handler awaits an injected database query. While PostgreSQL processes it, Node can serve another request. A successful read returns HTTP 200 even if the supplier table is empty. A missing table or failed connection returns HTTP 503 with a request ID. The liveness endpoint responds independently of PostgreSQL.
+Express middleware creates a request ID before routing and logs the final status and elapsed time when the response finishes. The readiness handler awaits reads against the supplier and staff tables. While PostgreSQL processes them, Node can serve another request. Successful reads return HTTP 200 even if the tables are empty. A missing table or failed connection returns HTTP 503 with a request ID. The liveness endpoint responds independently of PostgreSQL.
 
 | Request | Meaning |
 |---|---|
@@ -94,6 +108,8 @@ Run `npm run setup` after a fresh install or changes to the Prisma schema or sha
 | `packages/contracts` | Runtime response validation and inferred TypeScript types. |
 | `compose.yaml` | Local PostgreSQL 17 with a named data volume and a readiness probe. |
 
-Stop the API and web terminals with Ctrl+C. Use `docker compose down` to stop the database and retain its data. Review Milestone 1 before starting staff access and permissions.
+To run the access integration suite, set `TEST_DATABASE_URL` to a local PostgreSQL connection that can create databases, then run `npm run test:access`. The suite creates a uniquely named disposable database, applies both migrations, exercises the Express API, and removes that database. CI runs this suite as well.
+
+Stop the API and web terminals with Ctrl+C. Use `docker compose down` to stop the database and retain its data. The next milestone introduces customer and catalogue data after review of staff access.
 
 Licensed under the MIT License.

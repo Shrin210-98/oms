@@ -55,7 +55,6 @@ export function StatusPage() {
 
   return (
     <>
-      <header className="masthead"><div className="wrap brand"><strong>OMS</strong><span>Order Management System</span></div></header>
       <main className="wrap">
         <div className="title-row">
           <h1>System status</h1>

@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
-import express, { type ErrorRequestHandler } from "express";
+import express, { type ErrorRequestHandler, type Router } from "express";
+import helmet from "helmet";
+import { ZodError } from "zod";
+import { AccessError } from "./access/service.js";
 import type { Logger } from "pino";
 import type { Readiness } from "@oms/contracts";
 
-export function createApp(checkDatabase: () => Promise<void>, logger: Logger) {
+export function createApp(checkDatabase: () => Promise<void>, logger: Logger, access?: Router) {
   const app = express();
   app.disable("x-powered-by");
+  app.use(helmet());
 
   app.use((req, res, next) => {
     const requestId = randomUUID();
@@ -39,12 +43,21 @@ export function createApp(checkDatabase: () => Promise<void>, logger: Logger) {
     res.status(status === "ready" ? 200 : 503).json(result);
   });
 
+  if (access) app.use("/api/v1", access);
   app.use((_req, res) => {
     res.status(404).json({ code: "NOT_FOUND", requestId: res.locals.requestId });
   });
 
   const handleError: ErrorRequestHandler = (error, _req, res, next) => {
     if (res.headersSent) return next(error);
+    if (error instanceof AccessError) {
+      res.status(error.status).json({ code: error.code, requestId: res.locals.requestId });
+      return;
+    }
+    if (error instanceof ZodError || error.type === "entity.parse.failed" || error.type === "entity.too.large") {
+      res.status(error.type === "entity.too.large" ? 413 : 400).json({ code: "INVALID_INPUT", requestId: res.locals.requestId });
+      return;
+    }
     logger.error({ requestId: res.locals.requestId }, "Unexpected request failure");
     res.status(500).json({ code: "INTERNAL_ERROR", requestId: res.locals.requestId });
   };
