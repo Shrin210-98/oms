@@ -1,0 +1,44 @@
+name: OMS checks
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run setup
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Start local database and apply migrations
+        run: |
+          cp .env.example .env
+          docker compose up -d --wait db
+          npm run db:migrate
+      - name: Verify compiled API, development proxy and database recovery
+        run: |
+          npm start -w @oms/api > "$RUNNER_TEMP/oms-api.log" 2>&1 &
+          npm run dev:web > "$RUNNER_TEMP/oms-web.log" 2>&1 &
+          curl -fsS --retry 15 --retry-all-errors --retry-delay 1 http://127.0.0.1:5173/api/v1/health/live
+          node scripts/check-readiness.mjs ready
+          docker compose stop db
+          node scripts/check-readiness.mjs unavailable
+          docker compose start --wait db
+          node scripts/check-readiness.mjs ready
+      - name: Print service logs on failure
+        if: failure()
+        run: |
+          cat "$RUNNER_TEMP"/oms-*.log || true
+          docker compose logs db || true
+      - name: Stop CI services
+        if: always()
+        run: docker compose --env-file .env.example down

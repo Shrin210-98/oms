@@ -1,0 +1,27 @@
+{
+  "name": "oms",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev:api": "npm run dev -w @oms/api",
+    "dev:web": "npm run dev -w @oms/web",
+    "db:generate": "npm run db:generate -w @oms/api",
+    "db:migrate": "npm run db:migrate -w @oms/api",
+    "setup": "npm run db:generate && npm run build -w @oms/contracts",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build -w @oms/contracts && npm run build -w @oms/api && npm run build -w @oms/web"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

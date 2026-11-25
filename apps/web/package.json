@@ -1,0 +1,28 @@
+{
+  "name": "@oms/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@oms/contracts": "0.1.0",
+    "react": "19",
+    "react-dom": "19"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4",
+    "@testing-library/react": "16",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "@vitejs/plugin-react": "5",
+    "jsdom": "27",
+    "tailwindcss": "4",
+    "vite": "7",
+    "vitest": "4"
+  }
+}

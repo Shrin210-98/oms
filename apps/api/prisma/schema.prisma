@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  moduleFormat = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// The deployment represents a single seller. The database enforces the singleton.
+model SupplierProfile {
+  id        Int    @id @default(1) @db.SmallInt
+  legalName String @map("legal_name")
+
+  @@map("supplier_profile")
+}
